@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Escáner local de DNI y pasaporte. Genera PDF, Word o imagen desde fotos de móvil.">
+    <title>UnionDNIs — Escáner de Documentos</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="logo">
+            <span class="logo-icon">🪪</span>
+            <span class="logo-text">UnionDNIs</span>
+        </div>
+        <div class="status-badge" id="status-badge">
+            <span class="status-dot"></span>
+            <span>Local · Privado</span>
+        </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="app-main">
+
+        <!-- PASO 1: Subir imágenes -->
+        <section class="step-section" id="step-upload">
+            <div class="step-header">
+                <div class="step-number">1</div>
+                <h2>Sube las fotos del documento</h2>
+            </div>
+
+            <div class="upload-grid">
+                <!-- Cara frontal -->
+                <div class="upload-card" id="card-front">
+                    <div class="upload-zone" id="drop-front">
+                        <input type="file" id="input-front" accept="image/*" capture="environment" hidden>
+                        <div class="upload-placeholder" id="placeholder-front">
+                            <div class="upload-icon">📷</div>
+                            <p class="upload-label">Cara <strong>frontal</strong></p>
+                            <p class="upload-hint">Toca para abrir cámara<br>o arrastra una foto</p>
+                            <button class="btn-upload" onclick="document.getElementById('input-front').click()">
+                                Subir frontal
+                            </button>
+                        </div>
+                        <div class="upload-preview" id="preview-front" hidden>
+                            <img id="img-front" src="" alt="Vista previa cara frontal">
+                            <div class="preview-actions">
+                                <div class="action-row">
+                                    <button class="btn-sm btn-secondary" onclick="retakePhoto('front')">↩ Cambiar</button>
+                                    <div class="rotate-controls">
+                                        <button class="btn-icon-sm" onclick="rotateImage('front', 270)" title="Rotar izquierda">↺</button>
+                                        <button class="btn-icon-sm" onclick="rotateImage('front', 90)" title="Rotar derecha">↻</button>
+                                        <button class="btn-icon-sm" onclick="rotateImage('front', 180)" title="Girar 180°">🔃</button>
+                                    </div>
+                                </div>
+                                <span class="detection-badge" id="detection-front"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Canvas para selección manual de esquinas -->
+                    <div class="corner-selector" id="corner-selector-front" hidden>
+                        <p class="corner-hint">Haz clic en las <strong>4 esquinas</strong> del documento en orden:<br>
+                        1. Superior izq → 2. Superior der → 3. Inferior der → 4. Inferior izq</p>
+                        <canvas id="canvas-front" class="corner-canvas"></canvas>
+                        <div class="corner-controls">
+                            <button class="btn-sm btn-danger" onclick="resetCorners('front')">🔄 Reiniciar</button>
+                            <button class="btn-sm btn-primary" id="btn-apply-front" onclick="applyManualCorners('front')" disabled>✓ Aplicar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cara trasera -->
+                <div class="upload-card" id="card-back">
+                    <div class="upload-zone" id="drop-back">
+                        <input type="file" id="input-back" accept="image/*" capture="environment" hidden>
+                        <div class="upload-placeholder" id="placeholder-back">
+                            <div class="upload-icon">📷</div>
+                            <p class="upload-label">Cara <strong>trasera</strong></p>
+                            <p class="upload-hint">Toca para abrir cámara<br>o arrastra una foto</p>
+                            <button class="btn-upload" onclick="document.getElementById('input-back').click()">
+                                Subir trasera
+                            </button>
+                        </div>
+                        <div class="upload-preview" id="preview-back" hidden>
+                            <img id="img-back" src="" alt="Vista previa cara trasera">
+                            <div class="preview-actions">
+                                <div class="action-row">
+                                    <button class="btn-sm btn-secondary" onclick="retakePhoto('back')">↩ Cambiar</button>
+                                    <div class="rotate-controls">
+                                        <button class="btn-icon-sm" onclick="rotateImage('back', 270)" title="Rotar izquierda">↺</button>
+                                        <button class="btn-icon-sm" onclick="rotateImage('back', 90)" title="Rotar derecha">↻</button>
+                                        <button class="btn-icon-sm" onclick="rotateImage('back', 180)" title="Girar 180°">🔃</button>
+                                    </div>
+                                </div>
+                                <span class="detection-badge" id="detection-back"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="corner-selector" id="corner-selector-back" hidden>
+                        <p class="corner-hint">Haz clic en las <strong>4 esquinas</strong> del documento en orden:<br>
+                        1. Superior izq → 2. Superior der → 3. Inferior der → 4. Inferior izq</p>
+                        <canvas id="canvas-back" class="corner-canvas"></canvas>
+                        <div class="corner-controls">
+                            <button class="btn-sm btn-danger" onclick="resetCorners('back')">🔄 Reiniciar</button>
+                            <button class="btn-sm btn-primary" id="btn-apply-back" onclick="applyManualCorners('back')" disabled>✓ Aplicar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PASO 2: Opciones de procesamiento -->
+        <section class="step-section" id="step-options" hidden>
+            <div class="step-header">
+                <div class="step-number">2</div>
+                <h2>Opciones</h2>
+            </div>
+
+            <div class="options-grid">
+                <!-- Modo de imagen -->
+                <div class="option-group">
+                    <label class="option-label">Modo de imagen</label>
+                    <div class="toggle-group" id="enhance-mode">
+                        <button class="toggle-btn active" data-value="color">🎨 Color</button>
+                        <button class="toggle-btn" data-value="grayscale">🩶 Grises</button>
+                        <button class="toggle-btn" data-value="bw">⬛ Escáner</button>
+                        <button class="toggle-btn" data-value="original">📷 Original</button>
+                    </div>
+                </div>
+
+                <!-- Formato de salida -->
+                <div class="option-group">
+                    <label class="option-label">Formato de salida</label>
+                    <div class="toggle-group" id="output-format">
+                        <button class="toggle-btn active" data-value="pdf">📄 PDF</button>
+                        <button class="toggle-btn" data-value="word">📝 Word</button>
+                        <button class="toggle-btn" data-value="image">🖼️ Imagen PNG</button>
+                    </div>
+                </div>
+
+                <!-- OCR -->
+                <div class="option-group">
+                    <label class="option-label">Extracción de texto (OCR)</label>
+                    <label class="switch">
+                        <input type="checkbox" id="ocr-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="option-hint">Leer texto y zona MRZ</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- PASO 3: Procesar y descargar -->
+        <section class="step-section" id="step-export" hidden>
+            <div class="step-header">
+                <div class="step-number">3</div>
+                <h2>Generar documento</h2>
+            </div>
+
+            <div class="export-area">
+                <!-- Preview procesado (lado a lado) -->
+                <div class="processed-preview" id="processed-preview" hidden>
+                    <div class="preview-pair">
+                        <div class="preview-item">
+                            <p class="preview-item-label">Cara Frontal (procesada)</p>
+                            <img id="processed-front" src="" alt="Frontal procesada">
+                        </div>
+                        <div class="preview-item">
+                            <p class="preview-item-label">Cara Trasera (procesada)</p>
+                            <img id="processed-back" src="" alt="Trasera procesada">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resultados OCR (colapsable) -->
+                <details class="ocr-results" id="ocr-section" hidden>
+                    <summary>🔍 Texto extraído (OCR)</summary>
+                    <div class="ocr-content">
+                        <div class="ocr-tabs">
+                            <button class="tab-btn active" data-tab="fields">Campos</button>
+                            <button class="tab-btn" data-tab="mrz">MRZ Raw</button>
+                            <button class="tab-btn" data-tab="full">Texto completo</button>
+                        </div>
+                        <div class="tab-content" id="tab-fields">
+                            <table class="ocr-table" id="ocr-fields-table">
+                                <!-- Relleno dinámicamente por JS -->
+                            </table>
+                        </div>
+                        <div class="tab-content" id="tab-mrz" hidden>
+                            <pre class="mrz-raw" id="mrz-raw-text"></pre>
+                        </div>
+                        <div class="tab-content" id="tab-full" hidden>
+                            <pre class="ocr-raw" id="ocr-full-text"></pre>
+                        </div>
+                    </div>
+                </details>
+
+                <!-- Botón de generación -->
+                <div class="export-controls">
+                    <button class="btn-primary btn-large" id="btn-generate" onclick="generateDocument()">
+                        <span class="btn-icon">⚡</span>
+                        Generar documento
+                    </button>
+
+                    <!-- Estado de progreso -->
+                    <div class="progress-area" id="progress-area" hidden>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <p class="progress-text" id="progress-text">Procesando...</p>
+                    </div>
+
+                    <!-- Resultado final -->
+                    <div class="result-area" id="result-area" hidden>
+                        <div class="result-card">
+                            <span class="result-icon">✅</span>
+                            <div class="result-info">
+                                <p class="result-filename" id="result-filename"></p>
+                                <a class="btn-download" id="btn-download" href="#" download>
+                                    ⬇️ Descargar
+                                </a>
+                            </div>
+                        </div>
+                        <button class="btn-secondary btn-sm" onclick="resetAll()">
+                            🔄 Escanear otro documento
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Toast de notificaciones -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

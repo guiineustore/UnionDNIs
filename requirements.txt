@@ -1,0 +1,18 @@
+# Core - Visión por computador
+opencv-python>=4.10.0
+numpy>=1.26.0
+imutils>=0.5.4
+Pillow>=10.0.0
+
+# Servidor web
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+python-multipart>=0.0.9
+
+# Generación de documentos
+img2pdf>=0.5.1
+reportlab>=4.2.0
+python-docx>=1.1.0
+
+# OCR local
+pytesseract>=0.3.10
