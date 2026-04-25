@@ -26,7 +26,7 @@ DOCUMENT_RATIOS = {
     "id_card": 1.586,    # ISO/IEC 7810 ID-1 (DNI, NIE, tarjeta de crédito)
     "passport": 1.414,   # ISO/IEC 7810 ID-3 (pasaporte)
 }
-RATIO_TOLERANCE = 0.35   # Tolerancia amplia para fotos con ángulo
+RATIO_TOLERANCE = 0.25   # Tolerancia ajustada — rechaza cuadrados y formas no-documento
 
 
 def detect_document(image):
@@ -182,7 +182,7 @@ def _find_document_contour(edged):
     contours = sorted(contours, key=cv2.contourArea, reverse=True)[:10]
     
     image_area = edged.shape[0] * edged.shape[1]
-    min_area = image_area * 0.05  # Mínimo 5% de la imagen
+    min_area = image_area * 0.08  # Mínimo 8% de la imagen — evita falsos positivos pequeños
     
     for c in contours:
         area = cv2.contourArea(c)
@@ -204,32 +204,35 @@ def _find_document_contour(edged):
 
 def _validate_aspect_ratio(pts):
     """
-    Valida que los 4 puntos forman un rectángulo con aspect ratio 
+    Valida que los 4 puntos forman un rectángulo con aspect ratio
     compatible con un documento de identidad.
+
+    Estricto: solo acepta ratios cercanos a los conocidos
+    (DNI/ID-1: 1.586, Pasaporte/ID-3: 1.414) con tolerancia.
+    Rechaza cuadrados (ratio ~1.0) y rectángulos extremadamente alargados (>2.5).
     """
     ordered = order_points(pts)
     (tl, tr, br, bl) = ordered
-    
+
     widthA = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
     widthB = np.sqrt(((tr[0] - tl[0]) ** 2) + ((tr[1] - tl[1]) ** 2))
     width = max(widthA, widthB)
-    
+
     heightA = np.sqrt(((tr[0] - br[0]) ** 2) + ((tr[1] - br[1]) ** 2))
     heightB = np.sqrt(((tl[0] - bl[0]) ** 2) + ((tl[1] - bl[1]) ** 2))
     height = max(heightA, heightB)
-    
+
     if height == 0 or width == 0:
         return False
-    
+
     ratio = max(width, height) / min(width, height)
-    
-    # Comprobar contra ratios conocidos
-    for doc_type, expected_ratio in DOCUMENT_RATIOS.items():
+
+    # Solo aceptar ratios cercanos a los documentos reales
+    for expected_ratio in DOCUMENT_RATIOS.values():
         if abs(ratio - expected_ratio) < RATIO_TOLERANCE:
             return True
-    
-    # Aceptar cualquier ratio razonable (entre 1.0 y 2.0)
-    return 1.0 <= ratio <= 2.0
+
+    return False
 
 
 def _calculate_confidence(corners, image_shape):

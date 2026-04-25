@@ -51,6 +51,10 @@ OUTPUT_DIR = Path("output")
 UPLOAD_DIR.mkdir(exist_ok=True)
 OUTPUT_DIR.mkdir(exist_ok=True)
 
+# Parámetros JPEG de máxima calidad para imágenes intermedias
+# (evita acumulación de artefactos al rotar/transformar varias veces)
+JPEG_PARAMS = [int(cv2.IMWRITE_JPEG_QUALITY), 100]
+
 # Montar archivos estáticos (frontend)
 try:
     app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -138,7 +142,7 @@ async def upload_image(
         # Guardar imagen original
         filename = f"{side}_original.jpg"
         filepath = session_dir / filename
-        cv2.imwrite(str(filepath), image)
+        cv2.imwrite(str(filepath), image, JPEG_PARAMS)
 
         # Detectar documento automáticamente
         detection = detect_document(image)
@@ -205,7 +209,7 @@ async def rotate_image(
         }
         rotated = cv2.rotate(image, rotate_map[degrees])
 
-        cv2.imwrite(str(original_path), rotated)
+        cv2.imwrite(str(original_path), rotated, JPEG_PARAMS)
 
         processed_path = session_dir / f"{side}_processed.jpg"
         if processed_path.exists():
@@ -277,7 +281,7 @@ async def transform_image(request: TransformRequest):
 
         # Guardar imagen procesada
         processed_path = session_dir / f"{request.side}_processed.jpg"
-        cv2.imwrite(str(processed_path), enhanced)
+        cv2.imwrite(str(processed_path), enhanced, JPEG_PARAMS)
 
         return {
             "session_id": request.session_id,

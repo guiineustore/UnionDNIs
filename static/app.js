@@ -258,6 +258,30 @@ function initCornerSelector(side) {
 }
 
 /**
+ * Abre el selector manual de esquinas a petición del usuario,
+ * incluso si la detección automática tuvo confianza alta.
+ * Carga la imagen original (sin recorte) y muestra el canvas.
+ */
+function openManualSelector(side) {
+    if (!state.sessionId) {
+        showToast('Sube primero una imagen', 'warning');
+        return;
+    }
+
+    // Forzar carga de la imagen ORIGINAL (sin transform aplicado)
+    const imgElement = document.getElementById(`img-${side}`);
+    imgElement.src = `/api/preview/${state.sessionId}/${side}?original=1&t=${Date.now()}`;
+
+    // Cuando termine de cargar, inicializar el selector
+    imgElement.onload = () => {
+        state[side].processed = false;
+        initCornerSelector(side);
+        showToast('Selecciona las 4 esquinas en orden: TL → TR → BR → BL', 'info');
+        imgElement.onload = null;
+    };
+}
+
+/**
  * Dibujar esquinas seleccionadas
  */
 function drawCorners(side) {
