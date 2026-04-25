@@ -227,9 +227,15 @@ function initCornerSelector(side) {
     const canvas = document.getElementById(`canvas-${side}`);
     const img = document.getElementById(`img-${side}`);
 
+    // Asegurar que la imagen tenga dimensiones válidas
+    if (!img.naturalWidth) {
+        console.error('Imagen no cargada para', side);
+        return;
+    }
+
     // Ajustar canvas al tamaño de la imagen
-    canvas.width = img.offsetWidth;
-    canvas.height = img.offsetHeight;
+    canvas.width = img.offsetWidth || img.naturalWidth;
+    canvas.height = img.offsetHeight || img.naturalHeight;
 
     // Dibujar imagen en el canvas como fondo
     const ctx = canvas.getContext('2d');
@@ -268,17 +274,37 @@ function openManualSelector(side) {
         return;
     }
 
-    // Forzar carga de la imagen ORIGINAL (sin transform aplicado)
-    const imgElement = document.getElementById(`img-${side}`);
-    imgElement.src = `/api/preview/${state.sessionId}/${side}?original=1&t=${Date.now()}`;
+    // Mostrar selector de esquinas (sin ocultar el preview)
+    const cornerSelector = document.getElementById(`corner-selector-${side}`);
+    cornerSelector.hidden = false;
 
-    // Cuando termine de cargar, inicializar el selector
-    imgElement.onload = () => {
-        state[side].processed = false;
-        initCornerSelector(side);
-        showToast('Selecciona las 4 esquinas en orden: TL → TR → BR → BL', 'info');
-        imgElement.onload = null;
+    // Cargar la imagen original en el elemento img
+    const imgElement = document.getElementById(`img-${side}`);
+    const newSrc = `/api/preview/${state.sessionId}/${side}?original=1&t=${Date.now()}`;
+
+    // Resetear esquinas manuales
+    state.manualCorners[side] = [];
+    state[side].processed = false;
+    state[side].corners = null;
+
+    // Esperar a que la imagen cargue para inicializar canvas
+    const initCanvas = () => {
+        // Pequeño delay para asegurar que el DOM esté listo
+        setTimeout(() => {
+            initCornerSelector(side);
+            showToast('Selecciona las 4 esquinas en orden: TL → TR → BR → BL', 'info');
+        }, 50);
     };
+
+    // Forzar recarga de imagen
+    imgElement.src = newSrc;
+
+    if (imgElement.complete && imgElement.naturalWidth) {
+        // Imagen ya está cargada
+        initCanvas();
+    } else {
+        imgElement.onload = initCanvas;
+    }
 }
 
 /**

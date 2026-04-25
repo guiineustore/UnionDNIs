@@ -6,7 +6,8 @@
       "Bash(.\\\\venv\\\\Scripts\\\\python.exe run.py)",
       "Bash(./venv/Scripts/python.exe run.py)",
       "Bash(.\\\\venv\\\\Scripts\\\\python.exe -c \"from app.main import app; print\\('OK'\\)\")",
-      "Bash(./venv/Scripts/python.exe -c \"from app.main import app; print\\('OK'\\)\")"
+      "Bash(./venv/Scripts/python.exe -c \"from app.main import app; print\\('OK'\\)\")",
+      "Bash(git add *)"
     ]
   }
 }
