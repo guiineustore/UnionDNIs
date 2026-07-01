@@ -25,7 +25,10 @@ from pydantic import BaseModel
 from .scanner import detect_document, apply_transform
 from .enhancer import enhance_scan
 from .ocr import extract_text, extract_mrz, parse_mrz_fields, check_tesseract_available
-from .exporter import export_pdf, export_word, export_image
+from .exporter import (
+    export_pdf, export_word, export_image,
+    export_pdf_single, export_word_single, export_image_single
+)
 from .utils import correct_exif_orientation
 
 
@@ -75,8 +78,9 @@ class TransformRequest(BaseModel):
 
 class ExportRequest(BaseModel):
     session_id: str
-    format: str = "pdf"      # "pdf" | "word" | "image"
+    format: str = "pdf"          # "pdf" | "word" | "image"
     include_ocr: bool = True
+    document_type: str = "id"    # "id" | "vehicle"
 
 
 # =============================================
@@ -393,7 +397,10 @@ async def run_ocr(
 @app.post("/api/export")
 async def export_document(request: ExportRequest):
     """
-    Genera el documento final combinando ambas caras.
+    Genera el documento final. Para document_type="vehicle" usa la foto
+    única del Permiso de Circulación con layout de página completa.
+    Para document_type="id" (por defecto) combina frontal + trasera
+    como hasta ahora.
 
     Returns:
         {
@@ -404,36 +411,57 @@ async def export_document(request: ExportRequest):
     """
     try:
         session_dir = UPLOAD_DIR / request.session_id
-
-        # Cargar imágenes procesadas
-        front_path = session_dir / "front_processed.jpg"
-        back_path = session_dir / "back_processed.jpg"
-
-        front_image = cv2.imread(str(front_path)) if front_path.exists() else None
-        back_image = cv2.imread(str(back_path)) if back_path.exists() else None
-
-        if front_image is None and back_image is None:
-            raise HTTPException(
-                status_code=400,
-                detail="Al menos una imagen procesada es requerida"
-            )
-
-        # Generar nombre único
-        timestamp = uuid.uuid4().hex[:8]
         ext_map = {"pdf": "pdf", "word": "docx", "image": "png"}
         ext = ext_map.get(request.format, "pdf")
-        filename = f"dni_{request.session_id}_{timestamp}.{ext}"
-        output_path = OUTPUT_DIR / filename
+        timestamp = uuid.uuid4().hex[:8]
 
-        # Exportar según formato
-        if request.format == "pdf":
-            export_pdf(front_image, back_image, str(output_path))
-        elif request.format == "word":
-            export_word(front_image, back_image, str(output_path))
-        elif request.format == "image":
-            export_image(front_image, back_image, str(output_path))
+        if request.document_type == "vehicle":
+            front_path = session_dir / "front_processed.jpg"
+            front_image = cv2.imread(str(front_path)) if front_path.exists() else None
+
+            if front_image is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Se requiere la foto del Permiso de Circulación"
+                )
+
+            filename = f"permiso_{request.session_id}_{timestamp}.{ext}"
+            output_path = OUTPUT_DIR / filename
+            title = "Permiso de Circulación"
+
+            if request.format == "pdf":
+                export_pdf_single(front_image, str(output_path), title=title)
+            elif request.format == "word":
+                export_word_single(front_image, str(output_path), title=title)
+            elif request.format == "image":
+                export_image_single(front_image, str(output_path))
+            else:
+                raise HTTPException(status_code=400, detail=f"Formato no soportado: {request.format}")
+
         else:
-            raise HTTPException(status_code=400, detail=f"Formato no soportado: {request.format}")
+            front_path = session_dir / "front_processed.jpg"
+            back_path = session_dir / "back_processed.jpg"
+
+            front_image = cv2.imread(str(front_path)) if front_path.exists() else None
+            back_image = cv2.imread(str(back_path)) if back_path.exists() else None
+
+            if front_image is None and back_image is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Al menos una imagen procesada es requerida"
+                )
+
+            filename = f"dni_{request.session_id}_{timestamp}.{ext}"
+            output_path = OUTPUT_DIR / filename
+
+            if request.format == "pdf":
+                export_pdf(front_image, back_image, str(output_path))
+            elif request.format == "word":
+                export_word(front_image, back_image, str(output_path))
+            elif request.format == "image":
+                export_image(front_image, back_image, str(output_path))
+            else:
+                raise HTTPException(status_code=400, detail=f"Formato no soportado: {request.format}")
 
         return {
             "filename": filename,
