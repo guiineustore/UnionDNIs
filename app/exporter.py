@@ -475,3 +475,20 @@ def export_word_single(
 
     doc.save(output_path)
     return output_path
+
+
+def export_image_single(image: np.ndarray, output_path: str) -> str:
+    """
+    Exporta la imagen procesada como PNG con un margen blanco de acabado,
+    sin normalizar a un tamaño de lienzo fijo (a diferencia de export_image,
+    pensado para el par frontal/trasera del DNI).
+    """
+    padding = 20
+    bg_color = 240
+
+    h, w = image.shape[:2]
+    canvas_img = np.full((h + 2 * padding, w + 2 * padding, 3), bg_color, dtype=np.uint8)
+    canvas_img[padding:padding + h, padding:padding + w] = image
+
+    cv2.imwrite(output_path, canvas_img)
+    return output_path

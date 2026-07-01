@@ -68,3 +68,18 @@ def test_export_word_single_portrait_image(tmp_path):
     assert result == output_path
     assert os.path.exists(output_path)
     assert os.path.getsize(output_path) > 0
+
+
+def test_export_image_single_creates_file_with_padding(tmp_path):
+    import cv2
+    from app.exporter import export_image_single
+
+    output_path = str(tmp_path / "permiso.png")
+    image = _portrait_image()
+    result = export_image_single(image, output_path)
+
+    assert result == output_path
+    saved = cv2.imread(output_path)
+    assert saved is not None
+    assert saved.shape[0] == image.shape[0] + 40
+    assert saved.shape[1] == image.shape[1] + 40
