@@ -46,3 +46,25 @@ def test_export_pdf_single_landscape_image(tmp_path):
     assert result == output_path
     assert os.path.exists(output_path)
     assert os.path.getsize(output_path) > 0
+
+
+def test_export_word_single_creates_file(tmp_path):
+    from app.exporter import export_word_single
+
+    output_path = str(tmp_path / "permiso.docx")
+    result = export_word_single(_landscape_image(), output_path, title="Permiso de Circulación")
+
+    assert result == output_path
+    assert os.path.exists(output_path)
+    assert os.path.getsize(output_path) > 0
+
+
+def test_export_word_single_portrait_image(tmp_path):
+    from app.exporter import export_word_single
+
+    output_path = str(tmp_path / "permiso_portrait.docx")
+    result = export_word_single(_portrait_image(), output_path, title="Permiso de Circulación")
+
+    assert result == output_path
+    assert os.path.exists(output_path)
+    assert os.path.getsize(output_path) > 0

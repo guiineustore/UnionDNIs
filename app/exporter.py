@@ -19,6 +19,7 @@ from reportlab.lib.utils import ImageReader
 import docx
 from docx.shared import Inches, Pt, RGBColor, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.section import WD_ORIENT
 
 # Dimensiones estándar de documentos (en píxeles a 300 DPI)
 # DNI/ID Card: 85.6 × 53.98 mm → a 300 DPI = 1012 × 638 px
@@ -423,4 +424,54 @@ def export_pdf_single(
     c.drawImage(img_reader, x_centered, y_centered, width=draw_w, height=draw_h)
 
     c.save()
+    return output_path
+
+
+def export_word_single(
+    image: np.ndarray,
+    output_path: str,
+    title: str = "Documento"
+) -> str:
+    """
+    Genera un documento Word con una única imagen a página completa.
+    Usa orientación landscape si la imagen es apaisada, para que la
+    imagen no quede diminuta en una página portrait.
+    """
+    doc = docx.Document()
+    section = doc.sections[0]
+
+    h, w = image.shape[:2]
+    if w > h:
+        section.orientation = WD_ORIENT.LANDSCAPE
+        section.page_width, section.page_height = section.page_height, section.page_width
+
+    section.top_margin = Cm(1.5)
+    section.bottom_margin = Cm(1.5)
+    section.left_margin = Cm(1.5)
+    section.right_margin = Cm(1.5)
+
+    title_para = doc.add_paragraph()
+    title_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    title_run = title_para.add_run(title)
+    title_run.font.size = Pt(16)
+    title_run.font.bold = True
+    title_run.font.color.rgb = RGBColor(0x2D, 0x37, 0x48)
+
+    fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
+    date_para = doc.add_paragraph()
+    date_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    date_run = date_para.add_run(f"Generado: {fecha}")
+    date_run.font.size = Pt(9)
+    date_run.font.color.rgb = RGBColor(0x71, 0x80, 0x96)
+
+    doc.add_paragraph("_" * 50).alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    pil_image = _bgr_to_pil(image)
+    img_bytes = _pil_to_bytes(pil_image)
+    img_stream = io.BytesIO(img_bytes)
+
+    usable_width = section.page_width - section.left_margin - section.right_margin
+    doc.add_picture(img_stream, width=usable_width)
+
+    doc.save(output_path)
     return output_path
