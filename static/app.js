@@ -7,6 +7,7 @@
  */
 const state = {
     sessionId: null,
+    documentType: 'id',
     front: { uploaded: false, corners: null, processed: false },
     back:  { uploaded: false, corners: null, processed: false },
     enhanceMode: 'color',
@@ -34,10 +35,43 @@ async function initApp() {
         showToast('Error de conexión con el servidor', 'error');
     }
 
-    // Mostrar sección de upload con animación
+    applyDocumentTypeUI();
+
+    // Mostrar secciones iniciales con animación
     setTimeout(() => {
+        document.getElementById('step-document-type').classList.add('visible');
         document.getElementById('step-upload').classList.add('visible');
     }, 100);
+}
+
+/**
+ * Aplica al DOM los textos y la visibilidad de tarjetas según el tipo
+ * de documento seleccionado (state.documentType).
+ */
+function applyDocumentTypeUI() {
+    const isVehicle = state.documentType === 'vehicle';
+
+    document.getElementById('card-back').hidden = isVehicle;
+
+    const previewItemBack = document.getElementById('preview-item-back');
+    if (previewItemBack) previewItemBack.hidden = isVehicle;
+
+    const uploadLabel = document.getElementById('upload-label-front');
+    const uploadHint = document.getElementById('upload-hint-front');
+    const uploadBtn = document.getElementById('btn-upload-front');
+    const previewLabel = document.getElementById('preview-label-front');
+
+    if (isVehicle) {
+        uploadLabel.innerHTML = '<strong>Permiso de Circulación</strong>';
+        uploadHint.innerHTML = 'Toca para abrir cámara<br>o arrastra una foto';
+        uploadBtn.textContent = 'Subir foto';
+        if (previewLabel) previewLabel.textContent = 'Permiso de Circulación (procesado)';
+    } else {
+        uploadLabel.innerHTML = 'Cara <strong>frontal</strong>';
+        uploadHint.innerHTML = 'Toca para abrir cámara<br>o arrastra una foto';
+        uploadBtn.textContent = 'Subir frontal';
+        if (previewLabel) previewLabel.textContent = 'Cara Frontal (procesada)';
+    }
 }
 
 /**
@@ -462,7 +496,8 @@ async function generateDocument() {
             body: JSON.stringify({
                 session_id: state.sessionId,
                 format: state.outputFormat,
-                include_ocr: state.includeOcr
+                include_ocr: state.includeOcr,
+                document_type: state.documentType
             })
         });
 
@@ -691,6 +726,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (file && file.type.startsWith('image/')) {
                 handleFileSelect(side, file);
             }
+        });
+    });
+
+    // Selector de tipo de documento
+    document.querySelectorAll('#document-type-selector .toggle-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            if (btn.dataset.value === state.documentType) return;
+
+            document.querySelectorAll('#document-type-selector .toggle-btn').forEach(b =>
+                b.classList.remove('active'));
+            btn.classList.add('active');
+
+            state.documentType = btn.dataset.value;
+            await resetAll();
+            applyDocumentTypeUI();
         });
     });
 
