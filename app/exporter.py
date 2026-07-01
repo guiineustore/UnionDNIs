@@ -12,7 +12,7 @@ import numpy as np
 import cv2
 from PIL import Image
 from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import cm
 from reportlab.lib import colors
 from reportlab.lib.utils import ImageReader
@@ -364,4 +364,63 @@ def export_image(
         canvas[y_offset:y_offset + target_h, 0:target_w] = back_norm
 
     cv2.imwrite(output_path, canvas)
+    return output_path
+
+
+def _choose_page_orientation(image: np.ndarray) -> tuple:
+    """
+    Elige el tamaño de página A4 según el aspect ratio de la imagen:
+    landscape si es más ancha que alta, portrait en cualquier otro caso
+    (incluido el cuadrado).
+    """
+    h, w = image.shape[:2]
+    if w > h:
+        return landscape(A4)
+    return A4
+
+
+def export_pdf_single(
+    image: np.ndarray,
+    output_path: str,
+    title: str = "Documento"
+) -> str:
+    """
+    Genera un PDF de una sola página con una única imagen, en la
+    orientación A4 que mejor se ajusta a su aspect ratio. No fuerza
+    ningún lienzo de tamaño fijo ni muestra placeholders: es para
+    documentos de una sola cara (p.ej. Permiso de Circulación).
+    """
+    width, height = _choose_page_orientation(image)
+
+    c = canvas.Canvas(output_path, pagesize=(width, height))
+
+    c.setFont("Helvetica-Bold", 10)
+    c.setFillColor(colors.HexColor("#2d3748"))
+    c.drawCentredString(width / 2, height - 30, title)
+    c.setFont("Helvetica", 8)
+    c.setFillColor(colors.HexColor("#718096"))
+    fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
+    c.drawCentredString(width / 2, height - 45, f"Generado: {fecha}")
+
+    c.setStrokeColor(colors.HexColor("#e2e8f0"))
+    c.setLineWidth(0.5)
+    c.line(30, height - 55, width - 30, height - 55)
+
+    margin_x = 30
+    margin_bottom = 30
+    available_width = width - (2 * margin_x)
+    available_height = height - 55 - 10 - margin_bottom
+
+    pil_image = _bgr_to_pil(image)
+    img_bytes = _pil_to_bytes(pil_image)
+    img_reader = ImageReader(io.BytesIO(img_bytes))
+    iw, ih = pil_image.size
+    scale = min(available_width / iw, available_height / ih)
+    draw_w, draw_h = iw * scale, ih * scale
+    x_centered = margin_x + (available_width - draw_w) / 2
+    y_centered = margin_bottom + (available_height - draw_h) / 2
+
+    c.drawImage(img_reader, x_centered, y_centered, width=draw_w, height=draw_h)
+
+    c.save()
     return output_path
