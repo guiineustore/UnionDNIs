@@ -25,6 +25,18 @@
     <!-- Main content -->
     <main class="app-main">
 
+        <!-- PASO 0: Tipo de documento -->
+        <section class="step-section" id="step-document-type">
+            <div class="step-header">
+                <div class="step-number">🗂️</div>
+                <h2>Tipo de documento</h2>
+            </div>
+            <div class="toggle-group" id="document-type-selector">
+                <button class="toggle-btn active" data-value="id">🪪 DNI / NIE / Pasaporte</button>
+                <button class="toggle-btn" data-value="vehicle">🚗 Permiso de Circulación</button>
+            </div>
+        </section>
+
         <!-- PASO 1: Subir imágenes -->
         <section class="step-section" id="step-upload">
             <div class="step-header">
@@ -39,9 +51,9 @@
                         <input type="file" id="input-front" accept="image/*" capture="environment" hidden>
                         <div class="upload-placeholder" id="placeholder-front">
                             <div class="upload-icon">📷</div>
-                            <p class="upload-label">Cara <strong>frontal</strong></p>
-                            <p class="upload-hint">Toca para abrir cámara<br>o arrastra una foto</p>
-                            <button class="btn-upload" onclick="document.getElementById('input-front').click()">
+                            <p class="upload-label" id="upload-label-front">Cara <strong>frontal</strong></p>
+                            <p class="upload-hint" id="upload-hint-front">Toca para abrir cámara<br>o arrastra una foto</p>
+                            <button class="btn-upload" id="btn-upload-front" onclick="document.getElementById('input-front').click()">
                                 Subir frontal
                             </button>
                         </div>
@@ -168,11 +180,11 @@
                 <!-- Preview procesado (lado a lado) -->
                 <div class="processed-preview" id="processed-preview" hidden>
                     <div class="preview-pair">
-                        <div class="preview-item">
-                            <p class="preview-item-label">Cara Frontal (procesada)</p>
+                        <div class="preview-item" id="preview-item-front">
+                            <p class="preview-item-label" id="preview-label-front">Cara Frontal (procesada)</p>
                             <img id="processed-front" src="" alt="Frontal procesada">
                         </div>
-                        <div class="preview-item">
+                        <div class="preview-item" id="preview-item-back">
                             <p class="preview-item-label">Cara Trasera (procesada)</p>
                             <img id="processed-back" src="" alt="Trasera procesada">
                         </div>
