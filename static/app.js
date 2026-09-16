@@ -731,15 +731,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Selector de tipo de documento
     document.querySelectorAll('#document-type-selector .toggle-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', () => {
             if (btn.dataset.value === state.documentType) return;
 
             document.querySelectorAll('#document-type-selector .toggle-btn').forEach(b =>
                 b.classList.remove('active'));
             btn.classList.add('active');
 
+            // Cambiar de tipo NO descarta la foto ya subida: solo cambia qué
+            // tarjetas y etiquetas se muestran. Al exportar, el tipo "vehicle"
+            // ignora por sí solo la cara trasera, así que no hay estado híbrido.
             state.documentType = btn.dataset.value;
-            await resetAll();
             applyDocumentTypeUI();
         });
     });
