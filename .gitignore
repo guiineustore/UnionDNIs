@@ -33,3 +33,16 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# Datos personales — NUNCA al repo (es publico).
+# Este proyecto procesa DNI/NIE y permisos de circulacion: cualquier captura
+# o escaneo de un documento real se queda en local. Si alguna imagen tuviera
+# que versionarse (diagrama, captura de UI sin datos), se añade su excepcion
+# explicita aqui abajo.
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.heic
+*.tif
+*.tiff
